@@ -20,7 +20,7 @@ class Authenticator:
         result = cursor.fetchone()
         conn.close()
         if result:
-            return result[0].encode('utf-8')
+            return result[0]
         else:
             return None
 
