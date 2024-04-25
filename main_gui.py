@@ -145,7 +145,6 @@ class PlaybookVisualizerApp:
         self.update_incidents_listbox(category)
 
     def add_procedure(self):
-        # Open dialogs to ask for incident number, name, and phases
         incident_number = simpledialog.askstring("New Incident", "Enter the incident number:")
         if not incident_number:
             messagebox.showerror("Error", "Incident number is required!")
@@ -163,7 +162,6 @@ class PlaybookVisualizerApp:
             messagebox.showerror("Error", "All phases must be provided!")
             return
 
-        # Format steps
         steps = f"Preparation: {preparation}\nDetection: {detection}\nResponse: {response}"
         category = "Default Category"  # This can be modified to include category selection if necessary
         self.insert_procedure(f"{incident_number}: {incident_name}", steps, category)

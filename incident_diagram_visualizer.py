@@ -13,13 +13,11 @@ class IncidentDiagramVisualizer:
         dot.attr('node', shape='box', style='filled', color='lightblue')
         dot.attr('graph', label=f"{incident_title}\nCategory: {category}", fontsize='20')
 
-        # Split steps into phases and create nodes
         phases = steps.split('\n')
         for phase in phases:
             phase_name, phase_desc = phase.split(': ', 1)
             dot.node(phase_name, label=f'{phase_name}: {phase_desc}')
 
-        # Connect nodes in sequence
         if len(phases) > 1:
             for i in range(1, len(phases)):
                 dot.edge(phases[i-1].split(': ', 1)[0], phases[i].split(': ', 1)[0])

@@ -5,7 +5,6 @@ def create_database():
     conn = sqlite3.connect('playbook_visualizer.db')
     cursor = conn.cursor()
 
-    # Create tables
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS playbooks (
             id INTEGER PRIMARY KEY,
@@ -22,7 +21,6 @@ def create_database():
         )
     ''')
 
-    # Insert default admin user
     admin_username = 'admin'
     admin_password = 'admin'
     hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())

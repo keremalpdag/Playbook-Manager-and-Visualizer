@@ -7,13 +7,10 @@ class Authenticator:
         self.db_path = db_path
 
     def hash_password(self, password):
-        # Hash a password for the first time, with a randomly-generated salt
         hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         return hashed
 
     def verify_password(self, stored_password, provided_password):
-        # Check that an unhashed password matches one that has previously been
-        # hashed
         return bcrypt.checkpw(provided_password.encode('utf-8'), stored_password)
 
     def fetch_password(self, username):
@@ -23,7 +20,7 @@ class Authenticator:
         result = cursor.fetchone()
         conn.close()
         if result:
-            return result[0].encode('utf-8')  # Convert string to bytes
+            return result[0].encode('utf-8')
         else:
             return None
 
