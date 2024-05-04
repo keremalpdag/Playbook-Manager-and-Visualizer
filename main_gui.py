@@ -63,6 +63,10 @@ class PlaybookVisualizerApp:
         self.incident_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         self.incidents_listbox = tk.Listbox(self.incident_frame)
         self.incidents_listbox.pack(fill=tk.BOTH, expand=True)
+        self.incidents_listbox.bind("<Button-3>", self.show_context_menu)  # Bind right-click to show context menu
+
+        self.context_menu = tk.Menu(self.root, tearoff=0)
+        self.context_menu.add_command(label="Delete", command=self.delete_incident)
 
         self.view_button = ttk.Button(root, text="View Selected Incident", command=self.view_incident_details)
         self.view_button.pack(pady=5)
@@ -71,6 +75,66 @@ class PlaybookVisualizerApp:
 
         self.add_button = ttk.Button(self.input_frame, text="Add Procedure", command=self.add_procedure)
         self.add_button.pack(side=tk.LEFT, padx=10)
+
+        self.reset_button = ttk.Button(self.input_frame, text="Reset All", command=self.delete_all_incidents)
+        self.reset_button.pack(side=tk.RIGHT, padx=10)
+
+    def delete_all_incidents(self):
+        if self.auth.is_authenticated:
+            if messagebox.askyesno("Confirm",
+                                   "Are you sure you want to delete all incidents? This action cannot be undone."):
+                # Clear all records from the database
+                conn = sqlite3.connect('playbook_visualizer.db')
+                cursor = conn.cursor()
+                cursor.execute('DELETE FROM playbooks')
+                conn.commit()
+                conn.close()
+                # Clear the listbox
+                self.incidents_listbox.delete(0, tk.END)
+                messagebox.showinfo("Reset Complete", "All incidents have been deleted.")
+        else:
+            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
+            input_username = simpledialog.askstring("Username", "Enter Username")
+            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
+            if self.auth.authenticate(input_username,input_password):
+                tk.messagebox.showinfo("Authentication", "Authentication successful!")
+            else:
+                tk.messagebox.showerror("Authentication", "Authentication failed!")
+                return
+
+    def show_context_menu(self, event):
+        try:
+            self.incidents_listbox.selection_clear(0, tk.END)
+            self.incidents_listbox.selection_set(self.incidents_listbox.nearest(event.y))
+            self.context_menu.post(event.x_root, event.y_root)
+        except Exception as e:
+            print(e)  # Log or handle the exception appropriately
+
+    def delete_incident(self):
+        if self.auth.is_authenticated:
+            try:
+                selection_index = self.incidents_listbox.curselection()
+                selected_incident_title = self.incidents_listbox.get(selection_index)
+                # Delete from database
+                conn = sqlite3.connect('playbook_visualizer.db')
+                cursor = conn.cursor()
+                cursor.execute('DELETE FROM playbooks WHERE incident_title = ?', (selected_incident_title,))
+                conn.commit()
+                conn.close()
+                # Remove from listbox
+                self.incidents_listbox.delete(selection_index)
+            except Exception as e:
+                print(e)  # Log or handle the exception appropriately
+                messagebox.showerror("Error", "Failed to delete the incident")
+        else:
+            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
+            input_username = simpledialog.askstring("Username", "Enter Username")
+            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
+            if self.auth.authenticate(input_username,input_password):
+                tk.messagebox.showinfo("Authentication", "Authentication successful!")
+            else:
+                tk.messagebox.showerror("Authentication", "Authentication failed!")
+                return
 
     def fetch_incidents(self, category=None):
         conn = sqlite3.connect('playbook_visualizer.db')
@@ -115,6 +179,7 @@ class PlaybookVisualizerApp:
                 self.update_incidents_listbox()
                 tk.messagebox.showinfo("Upload Successful", "Playbook data has been uploaded and stored.")
         else:
+            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
             input_username = simpledialog.askstring("Username", "Enter Username")
             input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
             if self.auth.authenticate(input_username,input_password):
@@ -145,26 +210,36 @@ class PlaybookVisualizerApp:
         self.update_incidents_listbox(category)
 
     def add_procedure(self):
-        incident_number = simpledialog.askstring("New Incident", "Enter the incident number:")
-        if not incident_number:
-            messagebox.showerror("Error", "Incident number is required!")
-            return
-        incident_name = simpledialog.askstring("New Incident", "Enter the incident name:")
-        if not incident_name:
-            messagebox.showerror("Error", "Incident name is required!")
-            return
+        if self.auth.is_authenticated:
+            incident_number = simpledialog.askstring("New Incident", "Enter the incident number:")
+            if not incident_number:
+                messagebox.showerror("Error", "Incident number is required!")
+                return
+            incident_name = simpledialog.askstring("New Incident", "Enter the incident name:")
+            if not incident_name:
+                messagebox.showerror("Error", "Incident name is required!")
+                return
 
-        preparation = simpledialog.askstring("New Incident", "Enter Preparation phase details:")
-        detection = simpledialog.askstring("New Incident", "Enter Detection phase details:")
-        response = simpledialog.askstring("New Incident", "Enter Response phase details:")
+            preparation = simpledialog.askstring("New Incident", "Enter Preparation phase details:")
+            detection = simpledialog.askstring("New Incident", "Enter Detection phase details:")
+            response = simpledialog.askstring("New Incident", "Enter Response phase details:")
 
-        if not (preparation and detection and response):
-            messagebox.showerror("Error", "All phases must be provided!")
-            return
+            if not (preparation and detection and response):
+                messagebox.showerror("Error", "All phases must be provided!")
+                return
 
-        steps = f"Preparation: {preparation}\nDetection: {detection}\nResponse: {response}"
-        category = "Default Category"  # This can be modified to include category selection if necessary
-        self.insert_procedure(f"{incident_number}: {incident_name}", steps, category)
+            steps = f"Preparation: {preparation}\nDetection: {detection}\nResponse: {response}"
+            category = "Default Category"  # This can be modified to include category selection if necessary
+            self.insert_procedure(f"{incident_number}: {incident_name}", steps, category)
+        else:
+            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
+            input_username = simpledialog.askstring("Username", "Enter Username")
+            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
+            if self.auth.authenticate(input_username,input_password):
+                tk.messagebox.showinfo("Authentication", "Authentication successful!")
+            else:
+                tk.messagebox.showerror("Authentication", "Authentication failed!")
+                return
 
     def insert_procedure(self, title, steps, category):
         conn = sqlite3.connect('playbook_visualizer.db')
