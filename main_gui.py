@@ -67,6 +67,7 @@ class PlaybookVisualizerApp:
 
         self.context_menu = tk.Menu(self.root, tearoff=0)
         self.context_menu.add_command(label="Delete", command=self.delete_incident)
+        self.context_menu.add_command(label="Edit", command=self.edit_incident)
 
         self.view_button = ttk.Button(root, text="View Selected Incident", command=self.view_incident_details)
         self.view_button.pack(pady=5)
@@ -135,6 +136,51 @@ class PlaybookVisualizerApp:
             else:
                 tk.messagebox.showerror("Authentication", "Authentication failed!")
                 return
+
+    def edit_incident(self):
+        selection = self.incidents_listbox.curselection()
+        if not selection:
+            messagebox.showerror("Error", "No incident selected!")
+            return
+
+        selected_index = selection[0]
+        selected_incident = self.incidents_listbox.get(selected_index)
+        incident_id = selected_incident.split(":")[0].strip()  # Assuming ID is prefixed to the title
+
+        # Fetch existing details from the database
+        conn = sqlite3.connect('playbook_visualizer.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT incident_title, steps FROM playbooks WHERE id = ?', (incident_id,))
+        incident = cursor.fetchone()
+        conn.close()
+
+        if not incident:
+            messagebox.showerror("Error", "Incident not found!")
+            return
+
+        # Split title and steps
+        incident_title, steps = incident
+
+        # Dialogs to edit details
+        new_incident_title = simpledialog.askstring("Edit Incident", "Edit the incident title:",
+                                                    initialvalue=incident_title)
+        if not new_incident_title:
+            return
+        new_steps = simpledialog.askstring("Edit Incident", "Edit the steps details:", initialvalue=steps)
+        if not new_steps:
+            return
+
+        # Update database
+        conn = sqlite3.connect('playbook_visualizer.db')
+        cursor = conn.cursor()
+        cursor.execute('UPDATE playbooks SET incident_title = ?, steps = ? WHERE id = ?',
+                       (new_incident_title, new_steps, incident_id))
+        conn.commit()
+        conn.close()
+
+        # Update listbox display
+        self.incidents_listbox.delete(selected_index)
+        self.incidents_listbox.insert(selected_index, f"{incident_id}: {new_incident_title}")
 
     def fetch_incidents(self, category=None):
         conn = sqlite3.connect('playbook_visualizer.db')
