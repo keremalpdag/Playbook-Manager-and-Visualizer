@@ -6,21 +6,26 @@ class IncidentDiagramVisualizer:
     def __init__(self, parent):
         self.parent = parent
 
-    def generate_diagram(self, incident_title, steps, category):
+    def generate_diagram(self, incident_title, steps, category, criticality, criticality_description):
         dot = Digraph(comment=incident_title)
-
-        # Define attributes for the graph, nodes, and edges
         dot.attr('node', shape='box', style='filled', color='lightblue')
-        dot.attr('graph', label=f"{incident_title}\nCategory: {category}", fontsize='20')
+        dot.attr('graph',
+                 label=f"{incident_title}\\nCategory: {category}\\nCriticality: {criticality} - {criticality_description}",
+                 fontsize='20')
 
         phases = steps.split('\n')
         for phase in phases:
-            phase_name, phase_desc = phase.split(': ', 1)
-            dot.node(phase_name, label=f'{phase_name}: {phase_desc}')
+            if ': ' in phase:
+                phase_name, phase_desc = phase.split(': ', 1)
+                dot.node(phase_name, label=f'{phase_name}: {phase_desc}')
 
-        if len(phases) > 1:
-            for i in range(1, len(phases)):
-                dot.edge(phases[i-1].split(': ', 1)[0], phases[i].split(': ', 1)[0])
+        previous_phase = None
+        for phase in phases:
+            if ': ' in phase:
+                current_phase = phase.split(': ', 1)[0]
+                if previous_phase:
+                    dot.edge(previous_phase, current_phase)
+                previous_phase = current_phase
 
         dot.render('diagram', format='png', cleanup=True)
 

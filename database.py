@@ -10,7 +10,9 @@ def create_database():
             id INTEGER PRIMARY KEY,
             incident_title TEXT NOT NULL,
             steps TEXT NOT NULL,
-            category TEXT NOT NULL
+            category TEXT NOT NULL,
+            criticality TEXT,
+            criticality_description TEXT
         )
     ''')
     cursor.execute('''
@@ -20,6 +22,13 @@ def create_database():
             password TEXT NOT NULL
         )
     ''')
+
+    cursor.execute("PRAGMA table_info(playbooks)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if 'criticality' not in columns:
+        cursor.execute('ALTER TABLE playbooks ADD COLUMN criticality TEXT')
+    if 'criticality_description' not in columns:
+        cursor.execute('ALTER TABLE playbooks ADD COLUMN criticality_description TEXT')
 
     admin_username = 'admin'
     admin_password = 'admin'

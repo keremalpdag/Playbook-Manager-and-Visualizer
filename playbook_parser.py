@@ -17,12 +17,13 @@ class PlaybookParser:
                 return category
         return "Other"
 
-    def insert_incident_into_db(self, incident_title, steps, category):
+    def insert_incident_into_db(self, incident_title, steps, category, criticality, criticality_description):
         steps_str = '\n'.join([f'{k}: {v}' for k, v in steps.items()])
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute('''INSERT INTO playbooks (incident_title, steps, category) VALUES (?, ?, ?)''',
-                       (incident_title, steps_str, category))
+        cursor.execute('''
+            INSERT INTO playbooks (incident_title, steps, category, criticality, criticality_description) VALUES (?, ?, ?, ?, ?)
+            ''', (incident_title, steps_str, category, criticality, criticality_description))
         conn.commit()
         conn.close()
 
@@ -35,6 +36,8 @@ class PlaybookParser:
             lines = incident.strip().split('\n')
             incident_title = lines[0].strip()
             steps = {'Preparation': '', 'Detection': '', 'Response': ''}
+            criticality = ""
+            criticality_description = ""
             current_step = None
 
             for line in lines[1:]:
@@ -44,10 +47,14 @@ class PlaybookParser:
                     current_step = 'Detection'
                 elif line.startswith('Response:'):
                     current_step = 'Response'
+                elif line.startswith('Criticality:'):
+                    criticality = line.split(':', 1)[1].strip()
+                    continue
+                elif line.startswith('Criticality Description:'):
+                    criticality_description = line.split(':', 1)[1].strip()
+                    continue
                 if current_step:
                     steps[current_step] += line[len(current_step) + 1:].strip() + ' '
 
             category = self.categorize_incidents(incident_title)
-
-            self.insert_incident_into_db(incident_title, steps, category)
-
+            self.insert_incident_into_db(incident_title, steps, category, criticality, criticality_description)

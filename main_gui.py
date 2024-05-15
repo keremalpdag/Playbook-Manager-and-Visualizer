@@ -116,16 +116,16 @@ class PlaybookVisualizerApp:
             try:
                 selection_index = self.incidents_listbox.curselection()
                 selected_incident_title = self.incidents_listbox.get(selection_index)
-                # Delete from database
+
                 conn = sqlite3.connect('playbook_visualizer.db')
                 cursor = conn.cursor()
                 cursor.execute('DELETE FROM playbooks WHERE incident_title = ?', (selected_incident_title,))
                 conn.commit()
                 conn.close()
-                # Remove from listbox
+
                 self.incidents_listbox.delete(selection_index)
             except Exception as e:
-                print(e)  # Log or handle the exception appropriately
+                print(e)
                 messagebox.showerror("Error", "Failed to delete the incident")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
@@ -137,50 +137,48 @@ class PlaybookVisualizerApp:
                 tk.messagebox.showerror("Authentication", "Authentication failed!")
                 return
 
-    def edit_incident(self):
-        selection = self.incidents_listbox.curselection()
-        if not selection:
-            messagebox.showerror("Error", "No incident selected!")
-            return
+    def edit_incident(self, incident_id):
+        if self.auth.is_authenticated:
 
-        selected_index = selection[0]
-        selected_incident = self.incidents_listbox.get(selected_index)
-        incident_id = selected_incident.split(":")[0].strip()  # Assuming ID is prefixed to the title
+            conn = sqlite3.connect('playbook_visualizer.db')
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT incident_title, steps, category, criticality, criticality_description FROM playbooks WHERE id = ?',
+                (incident_id,))
+            existing_details = cursor.fetchone()
+            conn.close()
 
-        # Fetch existing details from the database
-        conn = sqlite3.connect('playbook_visualizer.db')
-        cursor = conn.cursor()
-        cursor.execute('SELECT incident_title, steps FROM playbooks WHERE id = ?', (incident_id,))
-        incident = cursor.fetchone()
-        conn.close()
+            if existing_details:
 
-        if not incident:
-            messagebox.showerror("Error", "Incident not found!")
-            return
+                updated_title = simpledialog.askstring("Edit Incident", "Edit Incident Name:",
+                                                       initialvalue=existing_details[0])
+                updated_steps = simpledialog.askstring("Edit Incident", "Edit Steps:", initialvalue=existing_details[1])
+                updated_category = simpledialog.askstring("Edit Incident", "Edit Category:",
+                                                          initialvalue=existing_details[2])
+                updated_criticality = simpledialog.askstring("Edit Incident",
+                                                             "Edit Criticality (Low, Medium, High, Critical):",
+                                                             initialvalue=existing_details[3])
+                updated_criticality_desc = simpledialog.askstring("Edit Incident", "Edit Criticality Description:",
+                                                                  initialvalue=existing_details[4])
 
-        # Split title and steps
-        incident_title, steps = incident
+                conn = sqlite3.connect('playbook_visualizer.db')
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE playbooks 
+                    SET incident_title = ?, steps = ?, category = ?, criticality = ?, criticality_description = ?
+                    WHERE id = ?''',
+                               (updated_title, updated_steps, updated_category, updated_criticality,
+                                updated_criticality_desc, incident_id))
+                conn.commit()
+                conn.close()
 
-        # Dialogs to edit details
-        new_incident_title = simpledialog.askstring("Edit Incident", "Edit the incident title:",
-                                                    initialvalue=incident_title)
-        if not new_incident_title:
-            return
-        new_steps = simpledialog.askstring("Edit Incident", "Edit the steps details:", initialvalue=steps)
-        if not new_steps:
-            return
+                messagebox.showinfo("Success", "Incident updated successfully")
+                self.update_incidents_listbox()  # Refresh the listbox or other UI elements displaying incidents
+            else:
+                messagebox.showerror("Error", "Incident not found")
 
-        # Update database
-        conn = sqlite3.connect('playbook_visualizer.db')
-        cursor = conn.cursor()
-        cursor.execute('UPDATE playbooks SET incident_title = ?, steps = ? WHERE id = ?',
-                       (new_incident_title, new_steps, incident_id))
-        conn.commit()
-        conn.close()
-
-        # Update listbox display
-        self.incidents_listbox.delete(selected_index)
-        self.incidents_listbox.insert(selected_index, f"{incident_id}: {new_incident_title}")
+        else:
+            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
 
     def fetch_incidents(self, category=None):
         conn = sqlite3.connect('playbook_visualizer.db')
@@ -242,12 +240,15 @@ class PlaybookVisualizerApp:
         selected_incident_title = self.incidents_listbox.get(selection_index)
         conn = sqlite3.connect('playbook_visualizer.db')
         cursor = conn.cursor()
-        cursor.execute("SELECT steps, category FROM playbooks WHERE incident_title = ?", (selected_incident_title,))
+        cursor.execute(
+            "SELECT steps, category, criticality, criticality_description FROM playbooks WHERE incident_title = ?",
+            (selected_incident_title,))
         result = cursor.fetchone()
         conn.close()
         if result:
-            steps_sequence, category = result
-            self.diagram_visualizer.generate_diagram(selected_incident_title, steps_sequence, category)
+            steps_sequence, category, criticality, criticality_description = result
+            self.diagram_visualizer.generate_diagram(selected_incident_title, steps_sequence, category, criticality,
+                                                     criticality_description)
             self.diagram_visualizer.display_diagram()
         else:
             messagebox.showinfo("Error", "Incident details not found.")
@@ -257,42 +258,31 @@ class PlaybookVisualizerApp:
 
     def add_procedure(self):
         if self.auth.is_authenticated:
-            incident_number = simpledialog.askstring("New Incident", "Enter the incident number:")
-            if not incident_number:
-                messagebox.showerror("Error", "Incident number is required!")
-                return
-            incident_name = simpledialog.askstring("New Incident", "Enter the incident name:")
-            if not incident_name:
-                messagebox.showerror("Error", "Incident name is required!")
-                return
-
+            incident_number = simpledialog.askstring("New Incident", "Enter Incident Number:")
+            incident_name = simpledialog.askstring("New Incident", "Enter Incident Name:")
             preparation = simpledialog.askstring("New Incident", "Enter Preparation phase details:")
             detection = simpledialog.askstring("New Incident", "Enter Detection phase details:")
             response = simpledialog.askstring("New Incident", "Enter Response phase details:")
+            criticality = simpledialog.askstring("New Incident", "Enter Criticality (Low, Medium, High, Critical):")
+            criticality_desc = simpledialog.askstring("New Incident", "Enter Criticality Description:")
 
-            if not (preparation and detection and response):
-                messagebox.showerror("Error", "All phases must be provided!")
+            if not (preparation and detection and response and criticality and criticality_desc):
+                messagebox.showerror("Error", "All fields must be provided!")
                 return
 
-            steps = f"Preparation: {preparation}\nDetection: {detection}\nResponse: {response}"
+            steps = f"Preparation: {preparation}\\nDetection: {detection}\\nResponse: {response}"
             category = "Default Category"  # This can be modified to include category selection if necessary
-            self.insert_procedure(f"{incident_number}: {incident_name}", steps, category)
+            self.insert_procedure(f"{incident_number}: {incident_name}", steps, category, criticality, criticality_desc)
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            input_username = simpledialog.askstring("Username", "Enter Username")
-            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username,input_password):
-                tk.messagebox.showinfo("Authentication", "Authentication successful!")
-            else:
-                tk.messagebox.showerror("Authentication", "Authentication failed!")
-                return
 
-    def insert_procedure(self, title, steps, category):
+    def insert_procedure(self, title, steps, category, criticality, criticality_description):
         conn = sqlite3.connect('playbook_visualizer.db')
         cursor = conn.cursor()
         try:
-            cursor.execute('INSERT INTO playbooks (incident_title, steps, category) VALUES (?, ?, ?)',
-                           (title, steps, category))
+            cursor.execute(
+                'INSERT INTO playbooks (incident_title, steps, category, criticality, criticality_description) VALUES (?, ?, ?, ?, ?)',
+                (title, steps, category, criticality, criticality_description))
             conn.commit()
             messagebox.showinfo("Success", "Procedure added successfully")
             self.update_incidents_listbox()  # Refresh the listbox
