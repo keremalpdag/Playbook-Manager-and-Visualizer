@@ -17,7 +17,7 @@ class AddIncidentForm(tk.Toplevel):
         self.db_connection = db_connection
         self.parent_app = parent_app
         self.title("Add New Incident")
-        self.geometry("500x350")  # Adjust size as needed
+        self.geometry("500x350")
         self.labels = ['Incident Number', 'Incident Name', 'Preparation', 'Detection', 'Response', 'Criticality', 'Criticality Description']
         self.entries = {}
         self.init_ui()
@@ -114,7 +114,7 @@ class PlaybookVisualizerApp:
         self.incident_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         self.incidents_listbox = tk.Listbox(self.incident_frame)
         self.incidents_listbox.pack(fill=tk.BOTH, expand=True)
-        self.incidents_listbox.bind("<Button-3>", self.show_context_menu)  # Bind right-click to show context menu
+        self.incidents_listbox.bind("<Button-3>", self.show_context_menu)
 
         self.context_menu = tk.Menu(self.root, tearoff=0)
         self.context_menu.add_command(label="Delete", command=self.delete_incident)
@@ -145,13 +145,13 @@ class PlaybookVisualizerApp:
         if self.auth.is_authenticated:
             if messagebox.askyesno("Confirm",
                                    "Are you sure you want to delete all incidents? This action cannot be undone."):
-                # Clear all records from the database
+
                 conn = sqlite3.connect('playbook_visualizer.db')
                 cursor = conn.cursor()
                 cursor.execute('DELETE FROM playbooks')
                 conn.commit()
                 conn.close()
-                # Clear the listbox
+
                 self.incidents_listbox.delete(0, tk.END)
                 messagebox.showinfo("Reset Complete", "All incidents have been deleted.")
         else:
@@ -170,7 +170,7 @@ class PlaybookVisualizerApp:
             self.incidents_listbox.selection_set(self.incidents_listbox.nearest(event.y))
             self.context_menu.post(event.x_root, event.y_root)
         except Exception as e:
-            print(e)  # Log or handle the exception appropriately
+            print(e)
 
     def delete_incident(self):
         if self.auth.is_authenticated:
