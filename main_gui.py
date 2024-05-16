@@ -10,6 +10,57 @@ from auth import Authenticator
 from tkinter import simpledialog, messagebox
 
 
+class AddIncidentForm(tk.Toplevel):
+    def __init__(self, master, db_connection, parent_app):
+        super().__init__(master)
+        self.master = master
+        self.db_connection = db_connection
+        self.parent_app = parent_app
+        self.title("Add New Incident")
+        self.geometry("500x350")  # Adjust size as needed
+        self.labels = ['Incident Number', 'Incident Name', 'Preparation', 'Detection', 'Response', 'Criticality', 'Criticality Description']
+        self.entries = {}
+        self.init_ui()
+
+    def init_ui(self):
+        for idx, label in enumerate(self.labels):
+            lbl = ttk.Label(self, text=label)
+            lbl.grid(row=idx, column=0, padx=10, pady=5, sticky="e")
+            entry = ttk.Entry(self, width=50)
+            entry.grid(row=idx, column=1, padx=10, pady=5, sticky="w")
+            self.entries[label] = entry
+
+        submit_button = ttk.Button(self, text="Submit", command=self.submit_incident)
+        submit_button.grid(row=len(self.labels), column=1, pady=10)
+
+    def submit_incident(self):
+        data = {label: self.entries[label].get() for label in self.labels}
+        if not all(data.values()):
+            messagebox.showerror("Error", "All fields must be provided!")
+            return
+        self.insert_procedure(data)
+        self.destroy()
+
+    def insert_procedure(self, data):
+        conn = self.db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                'INSERT INTO playbooks (incident_title, steps, category, criticality, criticality_description) VALUES (?, ?, ?, ?, ?)',
+                (data['Incident Name'],
+                 f"Preparation: {data['Preparation']}\\nDetection: {data['Detection']}\\nResponse: {data['Response']}",
+                 "Default Category",  # Adjust if category handling is different
+                 data['Criticality'],
+                 data['Criticality Description']))
+            conn.commit()
+            messagebox.showinfo("Success", "Procedure added successfully")
+            self.parent_app.update_incidents_listbox()
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+        finally:
+            conn.close()
+
+
 class PlaybookVisualizerApp:
     def __init__(self, root):
         self.root = root
@@ -74,11 +125,21 @@ class PlaybookVisualizerApp:
 
         self.update_incidents_listbox()
 
-        self.add_button = ttk.Button(self.input_frame, text="Add Procedure", command=self.add_procedure)
+        self.add_button = ttk.Button(self.input_frame, text="Add Procedure", command=self.open_add_incident_form)
         self.add_button.pack(side=tk.LEFT, padx=10)
 
         self.reset_button = ttk.Button(self.input_frame, text="Reset All", command=self.delete_all_incidents)
         self.reset_button.pack(side=tk.RIGHT, padx=10)
+
+    def open_add_incident_form(self):
+        if self.auth.is_authenticated:
+            db_connection = self.get_db_connection
+            AddIncidentForm(self.root, db_connection, self)
+        else:
+            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
+
+    def get_db_connection(self):
+        return sqlite3.connect('playbook_visualizer.db')
 
     def delete_all_incidents(self):
         if self.auth.is_authenticated:
@@ -255,41 +316,6 @@ class PlaybookVisualizerApp:
 
     def filter_by_category(self, category):
         self.update_incidents_listbox(category)
-
-    def add_procedure(self):
-        if self.auth.is_authenticated:
-            incident_number = simpledialog.askstring("New Incident", "Enter Incident Number:")
-            incident_name = simpledialog.askstring("New Incident", "Enter Incident Name:")
-            preparation = simpledialog.askstring("New Incident", "Enter Preparation phase details:")
-            detection = simpledialog.askstring("New Incident", "Enter Detection phase details:")
-            response = simpledialog.askstring("New Incident", "Enter Response phase details:")
-            criticality = simpledialog.askstring("New Incident", "Enter Criticality (Low, Medium, High, Critical):")
-            criticality_desc = simpledialog.askstring("New Incident", "Enter Criticality Description:")
-
-            if not (preparation and detection and response and criticality and criticality_desc):
-                messagebox.showerror("Error", "All fields must be provided!")
-                return
-
-            steps = f"Preparation: {preparation}\\nDetection: {detection}\\nResponse: {response}"
-            category = "Default Category"  # This can be modified to include category selection if necessary
-            self.insert_procedure(f"{incident_number}: {incident_name}", steps, category, criticality, criticality_desc)
-        else:
-            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-
-    def insert_procedure(self, title, steps, category, criticality, criticality_description):
-        conn = sqlite3.connect('playbook_visualizer.db')
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                'INSERT INTO playbooks (incident_title, steps, category, criticality, criticality_description) VALUES (?, ?, ?, ?, ?)',
-                (title, steps, category, criticality, criticality_description))
-            conn.commit()
-            messagebox.showinfo("Success", "Procedure added successfully")
-            self.update_incidents_listbox()  # Refresh the listbox
-        except sqlite3.IntegrityError:
-            messagebox.showerror("Error", "Failed to add the procedure")
-        finally:
-            conn.close()
 
 
 if __name__ == "__main__":
