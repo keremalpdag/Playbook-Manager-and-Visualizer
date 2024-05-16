@@ -49,7 +49,7 @@ class AddIncidentForm(tk.Toplevel):
                 'INSERT INTO playbooks (incident_title, steps, category, criticality, criticality_description) VALUES (?, ?, ?, ?, ?)',
                 (data['Incident Name'],
                  f"Preparation: {data['Preparation']}\\nDetection: {data['Detection']}\\nResponse: {data['Response']}",
-                 "Default Category",  # Adjust if category handling is different
+                 "Default Category",
                  data['Criticality'],
                  data['Criticality Description']))
             conn.commit()
@@ -234,7 +234,7 @@ class PlaybookVisualizerApp:
                 conn.close()
 
                 messagebox.showinfo("Success", "Incident updated successfully")
-                self.update_incidents_listbox()  # Refresh the listbox or other UI elements displaying incidents
+                self.update_incidents_listbox()
             else:
                 messagebox.showerror("Error", "Incident not found")
 
