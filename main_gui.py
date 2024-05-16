@@ -61,6 +61,41 @@ class AddIncidentForm(tk.Toplevel):
             conn.close()
 
 
+class LoginForm(tk.Toplevel):
+    def __init__(self, master, db_connection, parent_app, authenticator):
+        super().__init__(master)
+        self.master = master
+        self.db_connection = db_connection
+        self.parent_app = parent_app
+        self.authenticator = authenticator
+        self.title("Login")
+        self.geometry("500x350")
+        self.labels = ['Username', 'Password']
+        self.entries = {}
+        self.init_ui()
+
+    def init_ui(self):
+        for idx, label in enumerate(self.labels):
+            lbl = ttk.Label(self, text=label)
+            lbl.grid(row=idx, column=0, padx=10, pady=5, sticky="e")
+            entry = ttk.Entry(self, width=20, show="*" if label == "Password" else None)
+            entry.grid(row=idx, column=1, padx=10, pady=5, sticky="w")
+            self.entries[label] = entry
+
+        login_button = ttk.Button(self, text="Login", command=self.login)
+        login_button.grid(row=len(self.labels), column=1, pady=10)
+
+    def login(self):
+        username = self.entries['Username'].get()
+        password = self.entries['Password'].get()
+        if self.authenticator.authenticate(username, password):
+            messagebox.showinfo("Login Successful", "You have successfully logged in.")
+            self.destroy()
+        else:
+            messagebox.showerror("Login Failed", "Incorrect username or password")
+        self.destroy()
+
+
 class PlaybookVisualizerApp:
     def __init__(self, root):
         self.root = root
@@ -90,6 +125,7 @@ class PlaybookVisualizerApp:
         self.input_frame.pack(fill=tk.X, padx=10, pady=5)
         self.input_label = ttk.Label(self.input_frame, text="Upload Playbook/Procedure:")
         self.input_label.pack(side=tk.LEFT)
+
         self.upload_button = ttk.Button(self.input_frame, text="Upload", command=self.upload_playbook)
         self.upload_button.pack(side=tk.RIGHT)
 
@@ -131,6 +167,14 @@ class PlaybookVisualizerApp:
         self.reset_button = ttk.Button(self.input_frame, text="Reset All", command=self.delete_all_incidents)
         self.reset_button.pack(side=tk.RIGHT, padx=10)
 
+        self.add_button = ttk.Button(self.input_frame, text="Login", command=self.open_login_form)
+        self.add_button.pack(side=tk.RIGHT, padx=10)
+
+    def open_login_form(self):
+        db_connection = self.get_db_connection()
+        authenticator = self.auth
+        LoginForm(self.root, db_connection, self, authenticator)
+
     def open_add_incident_form(self):
         if self.auth.is_authenticated:
             db_connection = self.get_db_connection
@@ -156,13 +200,7 @@ class PlaybookVisualizerApp:
                 messagebox.showinfo("Reset Complete", "All incidents have been deleted.")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            input_username = simpledialog.askstring("Username", "Enter Username")
-            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username,input_password):
-                tk.messagebox.showinfo("Authentication", "Authentication successful!")
-            else:
-                tk.messagebox.showerror("Authentication", "Authentication failed!")
-                return
+            self.open_login_form()
 
     def show_context_menu(self, event):
         try:
@@ -190,13 +228,7 @@ class PlaybookVisualizerApp:
                 messagebox.showerror("Error", "Failed to delete the incident")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            input_username = simpledialog.askstring("Username", "Enter Username")
-            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username,input_password):
-                tk.messagebox.showinfo("Authentication", "Authentication successful!")
-            else:
-                tk.messagebox.showerror("Authentication", "Authentication failed!")
-                return
+            self.open_login_form()
 
     def edit_incident(self, incident_id):
         if self.auth.is_authenticated:
@@ -240,6 +272,7 @@ class PlaybookVisualizerApp:
 
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
+            self.open_login_form()
 
     def fetch_incidents(self, category=None):
         conn = sqlite3.connect('playbook_visualizer.db')
@@ -285,13 +318,7 @@ class PlaybookVisualizerApp:
                 tk.messagebox.showinfo("Upload Successful", "Playbook data has been uploaded and stored.")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            input_username = simpledialog.askstring("Username", "Enter Username")
-            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username,input_password):
-                tk.messagebox.showinfo("Authentication", "Authentication successful!")
-            else:
-                tk.messagebox.showerror("Authentication", "Authentication failed!")
-                return
+            self.open_login_form()
 
     def view_incident_details(self):
         selection_index = self.incidents_listbox.curselection()
