@@ -1,13 +1,11 @@
 import tkinter as tk
 import sqlite3
-from tkinter import ttk
-from tkinter import filedialog
+from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from database import create_database
 from incident_diagram_visualizer import IncidentDiagramVisualizer
 from playbook_parser import PlaybookParser
 from auth import Authenticator
-from tkinter import simpledialog, messagebox
 
 
 class AddIncidentForm(tk.Toplevel):
@@ -96,6 +94,35 @@ class LoginForm(tk.Toplevel):
         self.destroy()
 
 
+class HelpScreen(tk.Toplevel):
+    def __init__(self, master):
+        super().__init__(master)
+        self.title("Help")
+        self.geometry("600x400")
+        self.init_ui()
+
+    def init_ui(self):
+        help_text = (
+            "Welcome to the Playbook Visualizer Application!\n\n"
+            "This application allows you to upload, visualize, and manage cybersecurity playbooks.\n\n"
+            "Upload Document Format:\n"
+            "1. The document must be in plain text format.\n"
+            "2. The document should include sections for Preparation, Detection, and Response.\n"
+            "3. The document should also include a section for Criticality and Criticality Description\n"
+            "4. Each section should be clearly labeled and contain relevant information.\n\n"
+            "Example Format:\n"
+            "Incident X: Incident Title\n"
+            "Preparation: Details about preparation.\n"
+            "Detection: Details about detection.\n"
+            "Response: Details about response.\n"
+            "Criticality: Low, Medium, High, Critical\n"
+            "Criticality Description: Description/Details about criticality\n\n"
+            "For more information, reach out to me from github: https://github.com/keremalpdag"
+        )
+        label = tk.Label(self, text=help_text, justify=tk.LEFT, padx=10, pady=10)
+        label.pack(expand=True, fill='both')
+
+
 class PlaybookVisualizerApp:
     def __init__(self, root):
         self.root = root
@@ -159,6 +186,9 @@ class PlaybookVisualizerApp:
         self.view_button = ttk.Button(root, text="View Selected Incident", command=self.view_incident_details)
         self.view_button.pack(pady=5)
 
+        self.incident_count_label = ttk.Label(root, text="Total Incidents: 0", font=("Arial", 14))
+        self.incident_count_label.pack(side=tk.BOTTOM, fill=tk.X)
+
         self.update_incidents_listbox()
 
         self.add_button = ttk.Button(self.input_frame, text="Add Procedure", command=self.open_add_incident_form)
@@ -167,8 +197,14 @@ class PlaybookVisualizerApp:
         self.reset_button = ttk.Button(self.input_frame, text="Reset All", command=self.delete_all_incidents)
         self.reset_button.pack(side=tk.RIGHT, padx=10)
 
-        self.add_button = ttk.Button(self.input_frame, text="Login", command=self.open_login_form)
-        self.add_button.pack(side=tk.RIGHT, padx=10)
+        self.help_button = ttk.Button(self.input_frame, text="Help", command=self.open_help_screen)
+        self.help_button.pack(side=tk.RIGHT, padx=10)
+
+        self.login_button = ttk.Button(self.input_frame, text="Login", command=self.open_login_form)
+        self.login_button.pack(side=tk.RIGHT, padx=10)
+
+    def open_help_screen(self):
+        HelpScreen(self.root)
 
     def open_login_form(self):
         db_connection = self.get_db_connection()
@@ -177,7 +213,7 @@ class PlaybookVisualizerApp:
 
     def open_add_incident_form(self):
         if self.auth.is_authenticated:
-            db_connection = self.get_db_connection
+            db_connection = self.get_db_connection()
             AddIncidentForm(self.root, db_connection, self)
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
@@ -198,9 +234,16 @@ class PlaybookVisualizerApp:
 
                 self.incidents_listbox.delete(0, tk.END)
                 messagebox.showinfo("Reset Complete", "All incidents have been deleted.")
+                self.update_incident_count()
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            self.open_login_form()
+            input_username = simpledialog.askstring("Username", "Enter Username")
+            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
+            if self.auth.authenticate(input_username,input_password):
+                tk.messagebox.showinfo("Authentication", "Authentication successful!")
+            else:
+                tk.messagebox.showerror("Authentication", "Authentication failed!")
+                return
 
     def show_context_menu(self, event):
         try:
@@ -223,12 +266,19 @@ class PlaybookVisualizerApp:
                 conn.close()
 
                 self.incidents_listbox.delete(selection_index)
+                self.update_incident_count()
             except Exception as e:
                 print(e)
                 messagebox.showerror("Error", "Failed to delete the incident")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            self.open_login_form()
+            input_username = simpledialog.askstring("Username", "Enter Username")
+            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
+            if self.auth.authenticate(input_username,input_password):
+                tk.messagebox.showinfo("Authentication", "Authentication successful!")
+            else:
+                tk.messagebox.showerror("Authentication", "Authentication failed!")
+                return
 
     def edit_incident(self, incident_id):
         if self.auth.is_authenticated:
@@ -272,7 +322,6 @@ class PlaybookVisualizerApp:
 
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            self.open_login_form()
 
     def fetch_incidents(self, category=None):
         conn = sqlite3.connect('playbook_visualizer.db')
@@ -292,6 +341,15 @@ class PlaybookVisualizerApp:
         self.incidents_listbox.delete(0, tk.END)
         for incident_title in incidents:
             self.incidents_listbox.insert(tk.END, incident_title)
+        self.update_incident_count()
+
+    def update_incident_count(self):
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM playbooks")
+        count = cursor.fetchone()[0]
+        conn.close()
+        self.incident_count_label.config(text=f"Total Incidents: {count}")
 
     def filter_incidents(self, event):
         search_query = self.search_entry.get().lower()
@@ -318,7 +376,13 @@ class PlaybookVisualizerApp:
                 tk.messagebox.showinfo("Upload Successful", "Playbook data has been uploaded and stored.")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            self.open_login_form()
+            input_username = simpledialog.askstring("Username", "Enter Username")
+            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
+            if self.auth.authenticate(input_username,input_password):
+                tk.messagebox.showinfo("Authentication", "Authentication successful!")
+            else:
+                tk.messagebox.showerror("Authentication", "Authentication failed!")
+                return
 
     def view_incident_details(self):
         selection_index = self.incidents_listbox.curselection()
