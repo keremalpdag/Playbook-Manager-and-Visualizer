@@ -1,5 +1,5 @@
 from graphviz import Digraph
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw, ImageFont
 import tkinter as tk
 
 class IncidentDiagramVisualizer:
@@ -9,10 +9,15 @@ class IncidentDiagramVisualizer:
     def generate_diagram(self, incident_title, steps, category, criticality, criticality_description):
         dot = Digraph(comment=incident_title)
         dot.attr('node', shape='box', style='filled', color='lightblue')
-        dot.attr('graph',
-                 label=f"{incident_title}\\nCategory: {category}\\nCriticality: {criticality} - {criticality_description}",
-                 fontsize='20')
 
+        criticality_colors = {
+            "Low": "green",
+            "Medium": "yellow",
+            "High": "orange",
+            "Critical": "red"
+        }
+
+        criticality_color = criticality_colors.get(criticality, "black")
         phases = steps.split('\n')
         for phase in phases:
             if ': ' in phase:
@@ -27,12 +32,45 @@ class IncidentDiagramVisualizer:
                     dot.edge(previous_phase, current_phase)
                 previous_phase = current_phase
 
+        criticality_label = f"<<b>Criticality: {criticality} - {criticality_description}</b>>"
+        dot.node('Criticality', label=criticality_label, fontcolor="black", color=criticality_color, style='filled')
+
+        dot.attr(rankdir='TB')
+
+        with dot.subgraph() as s:
+            s.attr(rank='sink')
+            s.node('Criticality')
+
         dot.render('diagram', format='png', cleanup=True)
+
+        self.add_title_and_category(incident_title, category)
+
+    def add_title_and_category(self, incident_title, category):
+        img = Image.open('diagram.png')
+
+        draw = ImageDraw.Draw(img)
+        font_path = "arialbd.ttf"
+        font = ImageFont.truetype(font_path, 16)
+
+        title_text = f"{incident_title}\nCategory: {category}"
+        text_width, text_height = draw.textsize(title_text, font=font)
+
+        img_width, img_height = img.size
+        x_position = (img_width - text_width) // 2
+
+        new_img_height = img_height + text_height + 40
+        new_img = Image.new('RGB', (img_width, new_img_height), (255, 255, 255))
+        new_img.paste(img, (0, text_height + 40))
+
+        draw = ImageDraw.Draw(new_img)
+        draw.text((x_position, 10), title_text, font=font, fill="black")
+
+        new_img.save('diagram_with_title.png')
 
     def display_diagram(self):
         new_window = tk.Toplevel(self.parent)
         new_window.title("Incident Steps Diagram")
-        img = Image.open('diagram.png')
+        img = Image.open('diagram_with_title.png')
         photo = ImageTk.PhotoImage(img)
 
         image_label = tk.Label(new_window, image=photo)
@@ -40,3 +78,4 @@ class IncidentDiagramVisualizer:
         image_label.pack()
 
         new_window.geometry(f"{img.width}x{img.height}")
+
