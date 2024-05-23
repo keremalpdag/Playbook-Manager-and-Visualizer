@@ -94,6 +94,70 @@ class LoginForm(tk.Toplevel):
         self.destroy()
 
 
+class EditIncidentForm(tk.Toplevel):
+    def __init__(self, master, db_connection, parent_app, incident_id, existing_details):
+        super().__init__(master)
+        self.master = master
+        self.db_connection = db_connection
+        self.parent_app = parent_app
+        self.incident_id = incident_id
+        self.existing_details = existing_details
+        self.title("Edit Incident")
+        self.geometry("500x350")
+        self.labels = ['Incident Number', 'Incident Name', 'Preparation', 'Detection', 'Response', 'Criticality', 'Criticality Description']
+        self.entries = {}
+        self.init_ui()
+
+    def init_ui(self):
+        for idx, label in enumerate(self.labels):
+            lbl = ttk.Label(self, text=label)
+            lbl.grid(row=idx, column=0, padx=10, pady=5, sticky="e")
+            entry = ttk.Entry(self, width=50)
+            entry.grid(row=idx, column=1, padx=10, pady=5, sticky="w")
+            self.entries[label] = entry
+
+        self.entries['Incident Name'].insert(0, self.existing_details[0])
+        steps = self.existing_details[1].split('\\n')
+        self.entries['Preparation'].insert(0, steps[0].replace('Preparation: ', ''))
+        self.entries['Detection'].insert(0, steps[1].replace('Detection: ', ''))
+        self.entries['Response'].insert(0, steps[2].replace('Response: ', ''))
+        self.entries['Criticality'].insert(0, self.existing_details[3])
+        self.entries['Criticality Description'].insert(0, self.existing_details[4])
+
+        submit_button = ttk.Button(self, text="Submit", command=self.submit_edit)
+        submit_button.grid(row=len(self.labels), column=1, pady=10)
+
+    def submit_edit(self):
+        data = {label: self.entries[label].get() for label in self.labels}
+        if not all(data.values()):
+            messagebox.showerror("Error", "All fields must be provided!")
+            return
+        self.update_procedure(data)
+        self.destroy()
+
+    def update_procedure(self, data):
+        conn = self.db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                UPDATE playbooks 
+                SET incident_title = ?, steps = ?, category = ?, criticality = ?, criticality_description = ?
+                WHERE id = ?''',
+                (data['Incident Name'],
+                 f"Preparation: {data['Preparation']}\\nDetection: {data['Detection']}\\nResponse: {data['Response']}",
+                 "Default Category",
+                 data['Criticality'],
+                 data['Criticality Description'],
+                 self.incident_id))
+            conn.commit()
+            messagebox.showinfo("Success", "Incident updated successfully")
+            self.parent_app.update_incidents_listbox()
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+        finally:
+            conn.close()
+
+
 class HelpScreen(tk.Toplevel):
     def __init__(self, master):
         super().__init__(master)
@@ -181,7 +245,7 @@ class PlaybookVisualizerApp:
 
         self.context_menu = tk.Menu(self.root, tearoff=0)
         self.context_menu.add_command(label="Delete", command=self.delete_incident)
-        self.context_menu.add_command(label="Edit", command=self.edit_incident)
+        self.context_menu.add_command(label="Edit", command=self.open_edit_incident_form)
 
         self.view_button = ttk.Button(root, text="View Selected Incident", command=self.view_incident_details)
         self.view_button.pack(pady=5)
@@ -239,7 +303,7 @@ class PlaybookVisualizerApp:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
             input_username = simpledialog.askstring("Username", "Enter Username")
             input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username,input_password):
+            if self.auth.authenticate(input_username, input_password):
                 tk.messagebox.showinfo("Authentication", "Authentication successful!")
             else:
                 tk.messagebox.showerror("Authentication", "Authentication failed!")
@@ -252,6 +316,23 @@ class PlaybookVisualizerApp:
             self.context_menu.post(event.x_root, event.y_root)
         except Exception as e:
             print(e)
+
+    def open_edit_incident_form(self):
+        selection_index = self.incidents_listbox.curselection()
+        if not selection_index:
+            messagebox.showinfo("Selection Error", "No incident selected.")
+            return
+        selected_incident_title = self.incidents_listbox.get(selection_index)
+        conn = sqlite3.connect('playbook_visualizer.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM playbooks WHERE incident_title = ?", (selected_incident_title,))
+        result = cursor.fetchone()
+        conn.close()
+        if result:
+            incident_id = result[0]
+            self.edit_incident(incident_id)
+        else:
+            messagebox.showerror("Error", "Incident ID not found.")
 
     def delete_incident(self):
         if self.auth.is_authenticated:
@@ -274,7 +355,7 @@ class PlaybookVisualizerApp:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
             input_username = simpledialog.askstring("Username", "Enter Username")
             input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username,input_password):
+            if self.auth.authenticate(input_username, input_password):
                 tk.messagebox.showinfo("Authentication", "Authentication successful!")
             else:
                 tk.messagebox.showerror("Authentication", "Authentication failed!")
@@ -282,8 +363,7 @@ class PlaybookVisualizerApp:
 
     def edit_incident(self, incident_id):
         if self.auth.is_authenticated:
-
-            conn = sqlite3.connect('playbook_visualizer.db')
+            conn = self.get_db_connection()
             cursor = conn.cursor()
             cursor.execute(
                 'SELECT incident_title, steps, category, criticality, criticality_description FROM playbooks WHERE id = ?',
@@ -292,34 +372,9 @@ class PlaybookVisualizerApp:
             conn.close()
 
             if existing_details:
-
-                updated_title = simpledialog.askstring("Edit Incident", "Edit Incident Name:",
-                                                       initialvalue=existing_details[0])
-                updated_steps = simpledialog.askstring("Edit Incident", "Edit Steps:", initialvalue=existing_details[1])
-                updated_category = simpledialog.askstring("Edit Incident", "Edit Category:",
-                                                          initialvalue=existing_details[2])
-                updated_criticality = simpledialog.askstring("Edit Incident",
-                                                             "Edit Criticality (Low, Medium, High, Critical):",
-                                                             initialvalue=existing_details[3])
-                updated_criticality_desc = simpledialog.askstring("Edit Incident", "Edit Criticality Description:",
-                                                                  initialvalue=existing_details[4])
-
-                conn = sqlite3.connect('playbook_visualizer.db')
-                cursor = conn.cursor()
-                cursor.execute('''
-                    UPDATE playbooks 
-                    SET incident_title = ?, steps = ?, category = ?, criticality = ?, criticality_description = ?
-                    WHERE id = ?''',
-                               (updated_title, updated_steps, updated_category, updated_criticality,
-                                updated_criticality_desc, incident_id))
-                conn.commit()
-                conn.close()
-
-                messagebox.showinfo("Success", "Incident updated successfully")
-                self.update_incidents_listbox()
+                EditIncidentForm(self.root, self.get_db_connection, self, incident_id, existing_details)
             else:
                 messagebox.showerror("Error", "Incident not found")
-
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
 
@@ -378,7 +433,7 @@ class PlaybookVisualizerApp:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
             input_username = simpledialog.askstring("Username", "Enter Username")
             input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username,input_password):
+            if self.auth.authenticate(input_username, input_password):
                 tk.messagebox.showinfo("Authentication", "Authentication successful!")
             else:
                 tk.messagebox.showerror("Authentication", "Authentication failed!")
