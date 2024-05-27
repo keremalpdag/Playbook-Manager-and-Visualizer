@@ -40,13 +40,13 @@ class AddIncidentForm(tk.Toplevel):
         self.destroy()
 
     def insert_procedure(self, data):
-        conn = self.db_connection()
+        conn = self.db_connection
         cursor = conn.cursor()
         try:
             cursor.execute(
                 'INSERT INTO playbooks (incident_title, steps, category, criticality, criticality_description) VALUES (?, ?, ?, ?, ?)',
                 (data['Incident Name'],
-                 f"Preparation: {data['Preparation']}\\nDetection: {data['Detection']}\\nResponse: {data['Response']}",
+                 f"Preparation: {data['Preparation']}\nDetection: {data['Detection']}\nResponse: {data['Response']}",
                  "Default Category",
                  data['Criticality'],
                  data['Criticality Description']))
@@ -104,7 +104,8 @@ class EditIncidentForm(tk.Toplevel):
         self.existing_details = existing_details
         self.title("Edit Incident")
         self.geometry("500x350")
-        self.labels = ['Incident Number', 'Incident Name', 'Preparation', 'Detection', 'Response', 'Criticality', 'Criticality Description']
+        self.labels = ['Incident Name', 'Preparation', 'Detection', 'Response', 'Criticality',
+                       'Criticality Description']
         self.entries = {}
         self.init_ui()
 
@@ -117,10 +118,22 @@ class EditIncidentForm(tk.Toplevel):
             self.entries[label] = entry
 
         self.entries['Incident Name'].insert(0, self.existing_details[0])
-        steps = self.existing_details[1].split('\\n')
-        self.entries['Preparation'].insert(0, steps[0].replace('Preparation: ', ''))
-        self.entries['Detection'].insert(0, steps[1].replace('Detection: ', ''))
-        self.entries['Response'].insert(0, steps[2].replace('Response: ', ''))
+
+        steps = self.existing_details[1].split('\n')
+        preparation, detection, response = '', '', ''
+
+        for step in steps:
+            if step.startswith('Preparation:'):
+                preparation = step.replace('Preparation: ', '').strip()
+            elif step.startswith('Detection:'):
+                detection = step.replace('Detection: ', '').strip()
+            elif step.startswith('Response:'):
+                response = step.replace('Response: ', '').strip()
+
+        self.entries['Preparation'].insert(0, preparation)
+        self.entries['Detection'].insert(0, detection)
+        self.entries['Response'].insert(0, response)
+
         self.entries['Criticality'].insert(0, self.existing_details[3])
         self.entries['Criticality Description'].insert(0, self.existing_details[4])
 
@@ -130,32 +143,25 @@ class EditIncidentForm(tk.Toplevel):
     def submit_edit(self):
         data = {label: self.entries[label].get() for label in self.labels}
         if not all(data.values()):
-            messagebox.showerror("Error", "All fields must be provided!")
+            messagebox.showerror("Error", "All fields must be filled out")
             return
-        self.update_procedure(data)
-        self.destroy()
 
-    def update_procedure(self, data):
-        conn = self.db_connection()
+        conn = self.db_connection
         cursor = conn.cursor()
-        try:
-            cursor.execute('''
-                UPDATE playbooks 
-                SET incident_title = ?, steps = ?, category = ?, criticality = ?, criticality_description = ?
-                WHERE id = ?''',
-                (data['Incident Name'],
-                 f"Preparation: {data['Preparation']}\\nDetection: {data['Detection']}\\nResponse: {data['Response']}",
-                 "Default Category",
-                 data['Criticality'],
-                 data['Criticality Description'],
-                 self.incident_id))
-            conn.commit()
-            messagebox.showinfo("Success", "Incident updated successfully")
-            self.parent_app.update_incidents_listbox()
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-        finally:
-            conn.close()
+        cursor.execute('''UPDATE playbooks SET 
+                          incident_title = ?, 
+                          steps = ?, 
+                          criticality = ?, 
+                          criticality_description = ?
+                          WHERE id = ?''',
+                       (data['Incident Name'],
+                        f"Preparation: {data['Preparation']}\nDetection: {data['Detection']}\nResponse: {data['Response']}",
+                        data['Criticality'],
+                        data['Criticality Description'],
+                        self.incident_id))
+        conn.commit()
+        self.parent_app.update_incidents_listbox()
+        self.destroy()
 
 
 class HelpScreen(tk.Toplevel):
@@ -290,7 +296,7 @@ class PlaybookVisualizerApp:
             if messagebox.askyesno("Confirm",
                                    "Are you sure you want to delete all incidents? This action cannot be undone."):
 
-                conn = sqlite3.connect('playbook_visualizer.db')
+                conn = self.get_db_connection()
                 cursor = conn.cursor()
                 cursor.execute('DELETE FROM playbooks')
                 conn.commit()
@@ -323,14 +329,15 @@ class PlaybookVisualizerApp:
             messagebox.showinfo("Selection Error", "No incident selected.")
             return
         selected_incident_title = self.incidents_listbox.get(selection_index)
-        conn = sqlite3.connect('playbook_visualizer.db')
+        conn = self.get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM playbooks WHERE incident_title = ?", (selected_incident_title,))
+        cursor.execute("SELECT id, incident_title, steps, category, criticality, criticality_description FROM playbooks WHERE incident_title = ?", (selected_incident_title,))
         result = cursor.fetchone()
         conn.close()
         if result:
             incident_id = result[0]
-            self.edit_incident(incident_id)
+            existing_details = result[1:]
+            EditIncidentForm(self.root, self.get_db_connection(), self, incident_id, existing_details)
         else:
             messagebox.showerror("Error", "Incident ID not found.")
 
@@ -340,7 +347,7 @@ class PlaybookVisualizerApp:
                 selection_index = self.incidents_listbox.curselection()
                 selected_incident_title = self.incidents_listbox.get(selection_index)
 
-                conn = sqlite3.connect('playbook_visualizer.db')
+                conn = self.get_db_connection()
                 cursor = conn.cursor()
                 cursor.execute('DELETE FROM playbooks WHERE incident_title = ?', (selected_incident_title,))
                 conn.commit()
@@ -372,14 +379,14 @@ class PlaybookVisualizerApp:
             conn.close()
 
             if existing_details:
-                EditIncidentForm(self.root, self.get_db_connection, self, incident_id, existing_details)
+                EditIncidentForm(self.root, self.get_db_connection(), self, incident_id, existing_details)
             else:
                 messagebox.showerror("Error", "Incident not found")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
 
     def fetch_incidents(self, category=None):
-        conn = sqlite3.connect('playbook_visualizer.db')
+        conn = self.get_db_connection()
         cursor = conn.cursor()
         query = "SELECT incident_title FROM playbooks"
         if category and category != "All":
@@ -409,7 +416,7 @@ class PlaybookVisualizerApp:
     def filter_incidents(self, event):
         search_query = self.search_entry.get().lower()
         if search_query:
-            conn = sqlite3.connect('playbook_visualizer.db')
+            conn = self.get_db_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT incident_title FROM playbooks WHERE LOWER(incident_title) LIKE ?",
                            ('%' + search_query + '%',))
@@ -445,7 +452,7 @@ class PlaybookVisualizerApp:
             messagebox.showinfo("Selection Error", "No incident selected.")
             return
         selected_incident_title = self.incidents_listbox.get(selection_index)
-        conn = sqlite3.connect('playbook_visualizer.db')
+        conn = self.get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT steps, category, criticality, criticality_description FROM playbooks WHERE incident_title = ?",
