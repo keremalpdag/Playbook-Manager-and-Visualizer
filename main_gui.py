@@ -16,7 +16,7 @@ class AddIncidentForm(tk.Toplevel):
         self.parent_app = parent_app
         self.title("Add New Incident")
         self.geometry("500x350")
-        self.labels = ['Incident Number', 'Incident Name', 'Preparation', 'Detection', 'Response', 'Criticality', 'Criticality Description']
+        self.labels = ['Incident Name', 'Preparation', 'Detection', 'Response', 'Criticality', 'Criticality Description']
         self.entries = {}
         self.init_ui()
 
@@ -24,12 +24,28 @@ class AddIncidentForm(tk.Toplevel):
         for idx, label in enumerate(self.labels):
             lbl = ttk.Label(self, text=label)
             lbl.grid(row=idx, column=0, padx=10, pady=5, sticky="e")
-            entry = ttk.Entry(self, width=50)
+            if label == 'Criticality':
+                entry = ttk.Combobox(self, values=['Low', 'Medium', 'High', 'Critical'])
+            else:
+                entry = ttk.Entry(self, width=50)
             entry.grid(row=idx, column=1, padx=10, pady=5, sticky="w")
             self.entries[label] = entry
 
+        next_incident_number = self.get_next_incident_number()
+        self.entries['Incident Name'].insert(0, f"{next_incident_number}: ")
+
         submit_button = ttk.Button(self, text="Submit", command=self.submit_incident)
         submit_button.grid(row=len(self.labels), column=1, pady=10)
+
+    def get_next_incident_number(self):
+        cursor = self.db_connection.cursor()
+        cursor.execute("SELECT incident_title FROM playbooks ORDER BY id DESC LIMIT 1")
+        last_incident = cursor.fetchone()
+        cursor.close()
+        if last_incident:
+            last_number = int(last_incident[0].split(':')[0])
+            return last_number + 1
+        return 1
 
     def submit_incident(self):
         data = {label: self.entries[label].get() for label in self.labels}
@@ -113,7 +129,10 @@ class EditIncidentForm(tk.Toplevel):
         for idx, label in enumerate(self.labels):
             lbl = ttk.Label(self, text=label)
             lbl.grid(row=idx, column=0, padx=10, pady=5, sticky="e")
-            entry = ttk.Entry(self, width=50)
+            if label == 'Criticality':
+                entry = ttk.Combobox(self, values=['Low', 'Medium', 'High', 'Critical'])
+            else:
+                entry = ttk.Entry(self, width=50)
             entry.grid(row=idx, column=1, padx=10, pady=5, sticky="w")
             self.entries[label] = entry
 
