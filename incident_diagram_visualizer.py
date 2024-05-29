@@ -2,7 +2,11 @@ from graphviz import Digraph
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import tkinter as tk
 from tkinter import filedialog, messagebox
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
+
 
 class IncidentDiagramVisualizer:
     def __init__(self, parent):
@@ -82,7 +86,7 @@ class IncidentDiagramVisualizer:
         export_button = tk.Button(new_window, text="Export", command=self.export_diagram)
         export_button.pack()
 
-        new_window.geometry(f"{img.width}x{img.height+40}")
+        new_window.geometry(f"{img.width}x{img.height + 40}")
 
         self.new_window = new_window
         self.img = img
@@ -95,8 +99,18 @@ class IncidentDiagramVisualizer:
                 self.img.save(file_path)
                 messagebox.showinfo("Export Successful", f"Diagram saved as {file_path}")
             elif file_path.endswith('.pdf'):
-                c = canvas.Canvas(file_path)
-                c.drawImage('diagram_with_title.png', 0, 0, width=self.img.width, height=self.img.height)
+                c = canvas.Canvas(file_path, pagesize=letter)
+                img_width, img_height = self.img.size
+                page_width, page_height = letter
+
+                scale = min(page_width / img_width, page_height / img_height)
+                img_width *= scale
+                img_height *= scale
+
+                x = (page_width - img_width) / 2
+                y = page_height - img_height
+
+                c.drawImage(ImageReader('diagram_with_title.png'), x, y, width=img_width, height=img_height)
                 c.showPage()
                 c.save()
                 messagebox.showinfo("Export Successful", f"Diagram saved as {file_path}")
