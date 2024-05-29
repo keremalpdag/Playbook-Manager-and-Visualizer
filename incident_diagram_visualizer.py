@@ -1,6 +1,8 @@
 from graphviz import Digraph
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import tkinter as tk
+from tkinter import filedialog, messagebox
+from reportlab.pdfgen import canvas
 
 class IncidentDiagramVisualizer:
     def __init__(self, parent):
@@ -77,5 +79,24 @@ class IncidentDiagramVisualizer:
         image_label.photo = photo
         image_label.pack()
 
-        new_window.geometry(f"{img.width}x{img.height}")
+        export_button = tk.Button(new_window, text="Export", command=self.export_diagram)
+        export_button.pack()
 
+        new_window.geometry(f"{img.width}x{img.height+40}")
+
+        self.new_window = new_window
+        self.img = img
+
+    def export_diagram(self):
+        file_types = [('PNG Files', '*.png'), ('PDF Files', '*.pdf')]
+        file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=file_types)
+        if file_path:
+            if file_path.endswith('.png'):
+                self.img.save(file_path)
+                messagebox.showinfo("Export Successful", f"Diagram saved as {file_path}")
+            elif file_path.endswith('.pdf'):
+                c = canvas.Canvas(file_path)
+                c.drawImage('diagram_with_title.png', 0, 0, width=self.img.width, height=self.img.height)
+                c.showPage()
+                c.save()
+                messagebox.showinfo("Export Successful", f"Diagram saved as {file_path}")
