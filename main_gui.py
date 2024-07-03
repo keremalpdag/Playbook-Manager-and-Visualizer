@@ -67,7 +67,7 @@ class AddIncidentForm(tk.Toplevel):
                  data['Criticality'],
                  data['Criticality Description']))
             conn.commit()
-            messagebox.showinfo("Success", "Procedure added successfully")
+            messagebox.showinfo("Success", "Incident added successfully")
             self.parent_app.update_incidents_listbox()
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -239,11 +239,11 @@ class PlaybookVisualizerApp:
 
         self.input_frame = ttk.Frame(root)
         self.input_frame.pack(fill=tk.X, padx=10, pady=5)
-        self.input_label = ttk.Label(self.input_frame, text="Upload Playbook/Procedure:")
+        self.input_label = ttk.Label(self.input_frame, text="Upload Playbook:")
         self.input_label.pack(side=tk.LEFT)
 
         self.upload_button = ttk.Button(self.input_frame, text="Upload", command=self.upload_playbook)
-        self.upload_button.pack(side=tk.RIGHT)
+        self.upload_button.pack(side=tk.LEFT, padx=10)
 
         self.category_frame = ttk.Frame(root)
         self.category_frame.pack(fill=tk.X, padx=10, pady=5)
@@ -280,17 +280,20 @@ class PlaybookVisualizerApp:
 
         self.update_incidents_listbox()
 
-        self.add_button = ttk.Button(self.input_frame, text="Add Procedure", command=self.open_add_incident_form)
-        self.add_button.pack(side=tk.LEFT, padx=10)
+        self.help_button = ttk.Button(self.input_frame, text="Help", command=self.open_help_screen)
+        self.help_button.pack(side=tk.RIGHT, padx=10)
 
         self.reset_button = ttk.Button(self.input_frame, text="Reset All", command=self.delete_all_incidents)
         self.reset_button.pack(side=tk.RIGHT, padx=10)
 
-        self.help_button = ttk.Button(self.input_frame, text="Help", command=self.open_help_screen)
-        self.help_button.pack(side=tk.RIGHT, padx=10)
+        self.add_button = ttk.Button(self.input_frame, text="Add Incident Procedure",
+                                     command=self.open_add_incident_form)
+        self.add_button.pack(side=tk.RIGHT, padx=10)
 
         self.login_button = ttk.Button(self.input_frame, text="Login", command=self.open_login_form)
         self.login_button.pack(side=tk.RIGHT, padx=10)
+
+
 
     def open_help_screen(self):
         HelpScreen(self.root)
