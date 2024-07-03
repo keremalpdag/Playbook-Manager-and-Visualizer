@@ -450,8 +450,11 @@ class PlaybookVisualizerApp:
 
     def upload_playbook(self):
         if self.auth.is_authenticated:
-            file_path = filedialog.askopenfilename()
+            file_path = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt")])
             if file_path:
+                if not file_path.endswith('.txt'):
+                    tk.messagebox.showerror("Invalid File Type", "Only .txt files are supported.")
+                    return
                 self.parser.parse_file(file_path)
                 self.update_incidents_listbox()
                 tk.messagebox.showinfo("Upload Successful", "Playbook data has been uploaded and stored.")
@@ -463,7 +466,6 @@ class PlaybookVisualizerApp:
                 tk.messagebox.showinfo("Authentication", "Authentication successful!")
             else:
                 tk.messagebox.showerror("Authentication", "Authentication failed!")
-                return
 
     def view_incident_details(self):
         selection_index = self.incidents_listbox.curselection()
