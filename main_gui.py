@@ -458,6 +458,11 @@ class PlaybookVisualizerApp:
                 if not file_path.endswith('.txt'):
                     tk.messagebox.showerror("Invalid File Type", "Only .txt files are supported.")
                     return
+                with open(file_path, 'r') as file:
+                    content = file.read()
+                    if not self.validate_file_format(content):
+                        tk.messagebox.showerror("Invalid File Format", "The file does not match the expected format.")
+                        return
                 self.parser.parse_file(file_path)
                 self.update_incidents_listbox()
                 tk.messagebox.showinfo("Upload Successful", "Playbook data has been uploaded and stored.")
@@ -469,6 +474,23 @@ class PlaybookVisualizerApp:
                 tk.messagebox.showinfo("Authentication", "Authentication successful!")
             else:
                 tk.messagebox.showerror("Authentication", "Authentication failed!")
+
+    def validate_file_format(self, content):
+        import re
+        pattern = (
+            r'^Incident \d+: .+\n'
+            r'Preparation: .+\n'
+            r'Detection: .+\n'
+            r'Response: .+\n'
+            r'Criticality: (Low|Medium|High|Critical)\n'
+            r'Criticality Description: .+(\n|$)'
+        )
+        incidents = content.split('\n\n')
+        for incident in incidents:
+            if not re.match(pattern, incident.strip(), re.MULTILINE):
+                print("Error: Incident pattern does not match:", incident.strip())
+                return False
+        return True
 
     def view_incident_details(self):
         selection_index = self.incidents_listbox.curselection()
