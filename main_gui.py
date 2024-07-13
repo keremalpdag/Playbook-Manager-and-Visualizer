@@ -293,8 +293,6 @@ class PlaybookVisualizerApp:
         self.login_button = ttk.Button(self.input_frame, text="Login", command=self.open_login_form)
         self.login_button.pack(side=tk.RIGHT, padx=10)
 
-
-
     def open_help_screen(self):
         HelpScreen(self.root)
 
@@ -309,6 +307,9 @@ class PlaybookVisualizerApp:
             AddIncidentForm(self.root, db_connection, self)
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
+            db_connection = self.get_db_connection()
+            authenticator = self.auth
+            LoginForm(self.root, db_connection, self, authenticator)
 
     def get_db_connection(self):
         return sqlite3.connect('playbook_visualizer.db')
@@ -329,13 +330,9 @@ class PlaybookVisualizerApp:
                 self.update_incident_count()
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            input_username = simpledialog.askstring("Username", "Enter Username")
-            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username, input_password):
-                tk.messagebox.showinfo("Authentication", "Authentication successful!")
-            else:
-                tk.messagebox.showerror("Authentication", "Authentication failed!")
-                return
+            db_connection = self.get_db_connection()
+            authenticator = self.auth
+            LoginForm(self.root, db_connection, self, authenticator)
 
     def show_context_menu(self, event):
         try:
@@ -346,22 +343,28 @@ class PlaybookVisualizerApp:
             print(e)
 
     def open_edit_incident_form(self):
-        selection_index = self.incidents_listbox.curselection()
-        if not selection_index:
-            messagebox.showinfo("Selection Error", "No incident selected.")
-            return
-        selected_incident_title = self.incidents_listbox.get(selection_index)
-        conn = self.get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, incident_title, steps, category, criticality, criticality_description FROM playbooks WHERE incident_title = ?", (selected_incident_title,))
-        result = cursor.fetchone()
-        conn.close()
-        if result:
-            incident_id = result[0]
-            existing_details = result[1:]
-            EditIncidentForm(self.root, self.get_db_connection(), self, incident_id, existing_details)
+        if self.auth.is_authenticated:
+            selection_index = self.incidents_listbox.curselection()
+            if not selection_index:
+                messagebox.showinfo("Selection Error", "No incident selected.")
+                return
+            selected_incident_title = self.incidents_listbox.get(selection_index)
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, incident_title, steps, category, criticality, criticality_description FROM playbooks WHERE incident_title = ?", (selected_incident_title,))
+            result = cursor.fetchone()
+            conn.close()
+            if result:
+                incident_id = result[0]
+                existing_details = result[1:]
+                EditIncidentForm(self.root, self.get_db_connection(), self, incident_id, existing_details)
+            else:
+                messagebox.showerror("Error", "Incident ID not found.")
         else:
-            messagebox.showerror("Error", "Incident ID not found.")
+            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
+            db_connection = self.get_db_connection()
+            authenticator = self.auth
+            LoginForm(self.root, db_connection, self, authenticator)
 
     def delete_incident(self):
         if self.auth.is_authenticated:
@@ -382,30 +385,9 @@ class PlaybookVisualizerApp:
                 messagebox.showerror("Error", "Failed to delete the incident")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            input_username = simpledialog.askstring("Username", "Enter Username")
-            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username, input_password):
-                tk.messagebox.showinfo("Authentication", "Authentication successful!")
-            else:
-                tk.messagebox.showerror("Authentication", "Authentication failed!")
-                return
-
-    def edit_incident(self, incident_id):
-        if self.auth.is_authenticated:
-            conn = self.get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                'SELECT incident_title, steps, category, criticality, criticality_description FROM playbooks WHERE id = ?',
-                (incident_id,))
-            existing_details = cursor.fetchone()
-            conn.close()
-
-            if existing_details:
-                EditIncidentForm(self.root, self.get_db_connection(), self, incident_id, existing_details)
-            else:
-                messagebox.showerror("Error", "Incident not found")
-        else:
-            messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
+            db_connection = self.get_db_connection()
+            authenticator = self.auth
+            LoginForm(self.root, db_connection, self, authenticator)
 
     def fetch_incidents(self, category=None):
         conn = self.get_db_connection()
@@ -468,12 +450,9 @@ class PlaybookVisualizerApp:
                 tk.messagebox.showinfo("Upload Successful", "Playbook data has been uploaded and stored.")
         else:
             messagebox.showerror("Authentication Required", "You must be logged in to perform this action.")
-            input_username = simpledialog.askstring("Username", "Enter Username")
-            input_password = simpledialog.askstring("Password", "Enter Password:", show='*')
-            if self.auth.authenticate(input_username, input_password):
-                tk.messagebox.showinfo("Authentication", "Authentication successful!")
-            else:
-                tk.messagebox.showerror("Authentication", "Authentication failed!")
+            db_connection = self.get_db_connection()
+            authenticator = self.auth
+            LoginForm(self.root, db_connection, self, authenticator)
 
     def validate_file_format(self, content):
         import re
