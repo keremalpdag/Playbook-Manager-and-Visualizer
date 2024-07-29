@@ -200,12 +200,15 @@ class HelpScreen(tk.Toplevel):
             "3. The document should also include a section for Criticality and Criticality Description\n"
             "4. Each section should be clearly labeled and contain relevant information.\n\n"
             "Example Format:\n"
-            "Incident X: Incident Title\n"
+            "Incident 1: Incident Title\n"
             "Preparation: Details about preparation.\n"
             "Detection: Details about detection.\n"
             "Response: Details about response.\n"
             "Criticality: Low, Medium, High, Critical\n"
             "Criticality Description: Description/Details about criticality\n\n"
+            "Incident 2: Incident Title\n"
+            "...\n\n"
+            "THERE MUST BE A BLANK LINE BETWEEN INCIDENTS!\n\n"
             "For more information, reach out to me from github: https://github.com/keremalpdag"
         )
         label = tk.Label(self, text=help_text, justify=tk.LEFT, padx=10, pady=10)
