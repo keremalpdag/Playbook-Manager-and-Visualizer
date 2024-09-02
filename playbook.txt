@@ -1,0 +1,209 @@
+Incident 1: EV Charging Fraud via Vehicle Impersonation
+Preparation: Conduct security audits and implement strong authentication.
+Detection: Monitor for unauthorized access attempts.
+Response: Revoke suspicious access and enhance security measures.
+Criticality: Medium
+Criticality Description: Potential financial losses from fraudulent charges but limited broader network compromise.
+
+Incident 2: Attacks Against Charging Networks
+Preparation: Deploy network segmentation.
+Detection: Analyze network traffic for anomalies.
+Response: Isolate compromised segments and mitigate threats.
+Criticality: High
+Criticality Description: Broad impacts on network operations and service availability, potentially affecting multiple customers.
+
+Incident 3: Charging Stations Attacking Multiple Vehicles
+Preparation: Update charging stations' software.
+Detection: Use IDS to detect malicious activities.
+Response: Patch vulnerabilities and disable affected stations if needed.
+Criticality: High
+Criticality Description: Direct threat to vehicle integrity and customer safety, significant operational disruptions.
+
+Incident 4: Remote Exploitation of EV Charging Stations
+Preparation: Implement hybrid intrusion detection and encrypt communications.
+Detection: Identify signs of remote exploitation.
+Response: Secure communication channels and block exploit paths.
+Criticality: High
+Criticality Description: Could allow widespread network compromise and unauthorized control over charging functions.
+
+Incident 5: Inappropriate Content Displayed on EV Charging Station Screens
+Preparation: Secure interfaces and communication channels.
+Detection: Monitor for unauthorized content changes.
+Response: Remove inappropriate content and investigate the breach source.
+Criticality: Low
+Criticality Description: More reputational than operational; limited impact on charging station functionality.
+
+Incident 6: Ransomware Attacks Against EV Charging Stations and Users
+Preparation: Establish data backup strategies.
+Detection: Identify ransomware infections early.
+Response: Restore data from backups and educate users on phishing prevention.
+Criticality: Critical
+Criticality Description: High potential for operational disruption, financial loss, and data compromise.
+
+Incident 7: High Voltage Fault Codes Triggered by Hacking
+Preparation: Implement strict input validation on software.
+Detection: Monitor for unexpected fault codes.
+Response: Conduct penetration testing and remedy identified vulnerabilities.
+Criticality: Medium
+Criticality Description: Potential for damage to vehicles and charging stations, indirect safety risks.
+
+Incident 8: MitM Attack on EV Charging Communication
+Preparation: Implement end-to-end encryption.
+Detection: Educate users on secure connections.
+Response: Use secure communication protocols.
+Criticality: Medium
+Criticality Description: Risks to data integrity and privacy, moderate impact on operational security.
+
+Incident 9: Ransomware Attack on EV Charging Station Management System
+Preparation: Isolate and remove ransomware payloads.
+Detection: Implement phishing prevention training.
+Response: Restore data from backups.
+Criticality: Critical
+Criticality Description: Similar to a broader ransomware attack but with targeted impact on management operations.
+
+Incident 10: Impersonation of Charging Station Admin Users
+Preparation: Implement RBAC and authentication protocols.
+Detection: Regularly review access permissions.
+Response: Update access controls and revoke unauthorized access.
+Criticality: High
+Criticality Description: Access breach could lead to widespread operational disruptions and unauthorized actions.
+
+Incident 11: Disabling EV Charging Stations as Part of Cyberwar Efforts
+Preparation: Develop a BCP.
+Detection: Collaborate for threat intelligence sharing.
+Response: Coordinate responses with partners.
+Criticality: Critical
+Criticality Description: Part of a larger, coordinated attack likely to cause widespread disruption and panic.
+
+Incident 12: Unauthorized Access to EV Charging Station
+Preparation: Implement multi-factor authentication.
+Detection: Conduct security audits.
+Response: Revoke unauthorized access.
+Criticality: Medium
+Criticality Description: Potential for operational disruption, depends on what the unauthorized access entails.
+
+Incident 13: EV Charging Station Malware Infection
+Preparation: Isolate infected stations.
+Detection: Run malware scans.
+Response: Restore systems from backups.
+Criticality: High
+Criticality Description: Could compromise multiple stations, leading to operational disruptions and safety risks.
+
+Incident 14: DoS Attack on EV Charging Network
+Preparation: Implement rate limiting.
+Detection: Monitor for traffic anomalies.
+Response: Redistribute network traffic.
+Criticality: High
+Criticality Description: Directly affects service availability, potential for significant customer impact.
+
+Incident 15: Physical Tampering with EV Charging Hardware
+Preparation: Enhance physical security.
+Detection: Inspect for tampering.
+Response: Replace compromised hardware.
+Criticality: High
+Criticality Description: Immediate physical risks and operational disruptions, potential safety hazards.
+
+Incident 16: Data Breach of Customer Information
+Preparation: Encrypt sensitive data.
+Detection: Identify data breach.
+Response: Notify affected users and reset passwords.
+Criticality: Critical
+Criticality Description: Severe reputational and financial impact due to loss of customer trust and potential penalties.
+
+Incident 17: Firmware Tampering in EV Charging Stations
+Preparation: Secure firmware update mechanisms.
+Detection: Verify firmware integrity.
+Response: Reinstall trusted firmware.
+Criticality: High
+Criticality Description: Could disable stations or alter functionality, leading to operational and safety issues.
+
+Incident 18: Exploitation of Vulnerabilities in EV Charging Station Software
+Preparation: Apply security patches.
+Detection: Conduct vulnerability assessments.
+Response: Monitor and mitigate suspicious activities.
+Criticality: High
+Criticality Description: Potential for broad network compromise and unauthorized control over station functions.
+
+Incident 19: Securing EVs and Charging Stations with VSOCs
+Preparation: Establish a centralized VSOC.
+Detection: Integrate advanced threat detection tools.
+Response: Address incidents based on VSOC insights.
+Criticality: Medium
+Criticality Description: Enhances security posture; not directly an incident but a preventive measure.
+
+Incident 20: Physical and Remote Manipulation of EV Chargers
+Preparation: Enhance physical security measures.
+Detection: Inspect for tampering signs.
+Response: Replace compromised hardware and secure communication.
+Criticality: High
+Criticality Description: Direct impact on charger functionality and safety, could lead to physical harm.
+
+Incident 21: EV Battery Draining Attack via Compromised Charging Station
+Preparation: Monitor energy usage patterns.
+Detection: Identify anomalies in energy usage.
+Response: Disable remote access and update firmware.
+Criticality: High
+Criticality Description: Directly impacts vehicle usability and customer safety, potential for extensive physical damage.
+
+Incident 22: Overcharging Attack Leading to EV Battery Damage
+Preparation: Implement strict charging controls.
+Detection: Monitor for irregular charging behavior.
+Response: Disable affected stations for inspection.
+Criticality: High
+Criticality Description: Direct safety risk to users, potential for significant vehicle damage.
+
+Incident 23: Unauthorized EV Charging Due to Weak Authentication
+Preparation: Strengthen authentication mechanisms.
+Detection: Audit charging sessions.
+Response: Update access credentials regularly.
+Criticality: Medium
+Criticality Description: Financial implications more than operational, potential for loss of service revenue.
+
+Incident 24: Injection of False Data in EV Charging Station Telemetry
+Preparation: Validate data integrity.
+Detection: Monitor for unexpected data patterns.
+Response: Secure communication channels.
+Criticality: Medium
+Criticality Description: Could lead to operational inefficiencies, misguided decision-making based on inaccurate data.
+
+Incident 25: Theft of Service via EV Charging Station Network Penetration
+Preparation: Secure network endpoints.
+Detection: Scan for unauthorized access points.
+Response: Implement network segmentation.
+Criticality: Medium
+Criticality Description: Financial losses, potential access to broader network systems leading to further exploits.
+
+Incident 26: Compromise of EV Charging Reservation System
+Preparation: Secure backup of reservation system.
+Detection: Monitor for unauthorized access.
+Response: Restore system and update security measures.
+Criticality: High
+Criticality Description: Disruption to customer service, potential for unauthorized access to customer data.
+
+Incident 27: Interference with Wireless Charging Communication
+Preparation: Ensure robust communication protocols and shielding against interference.
+Detection: Monitor for communication disruptions or anomalies in wireless charging sessions.
+Response: Investigate and mitigate sources of interference, update communication protocols if needed.
+Criticality: Medium
+Criticality Description: May lead to charging inefficiencies and user dissatisfaction, potential for minor operational disruptions.
+
+Incident 28: Misconfiguration of Charging Station Parameters
+Preparation: Regularly audit and validate configuration settings.
+Detection: Monitor for deviations from standard operating parameters.
+Response: Correct misconfigurations and review change management processes.
+Criticality: Medium
+Criticality Description: Can cause charging inefficiencies or failures, affecting customer satisfaction and operational consistency.
+
+Incident 29: Supply Chain Attacks on EV Charging Station Components
+Preparation: Vet suppliers and implement rigorous quality control measures.
+Detection: Inspect components for anomalies or inconsistencies.
+Response: Replace compromised components and enhance supply chain security.
+Criticality: High
+Criticality Description: Potential for widespread impact if compromised components are installed across multiple stations, leading to operational and safety risks.
+
+Incident 30: Compromised Mobile Apps for EV Charging Stations
+Preparation: Implement secure coding practices and regular app security reviews.
+Detection: Monitor app stores for malicious versions and user reports of anomalies.
+Response: Revoke malicious apps and notify users to update or reinstall secure versions.
+Criticality: High
+Criticality Description: Could lead to unauthorized access to user accounts, financial loss, and compromised charging sessions.
